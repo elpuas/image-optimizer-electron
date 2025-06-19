@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Image Optimizer</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css" />
+</head>
+<body>
+	<h1>Image Optimizer</h1>
+
+	<button id="select-folder">Select Folder</button>
+	<p id="folder-path"><em>No folder selected</em></p>
+
+	<label for="format">Format</label>
+	<select id="format">
+		<option value="original">Original (optimized)</option>
+		<option value="webp" selected>WebP</option>
+		<option value="jpeg">JPEG</option>
+		<option value="png">PNG</option>
+	</select>
+
+	<button id="optimize" disabled>Optimize</button>
+
+	<pre id="output" style="white-space: pre-wrap; margin-top: 1em; background: #f5f5f5; padding: 1em; border-radius: 4px; max-height: 400px; overflow-y: auto;"></pre>
+
+	<script src="app.js"></script>
+</body>
+</html>

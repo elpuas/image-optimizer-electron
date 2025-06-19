@@ -5,7 +5,7 @@
     "node": true,
     "es2022": true
   },
-  "parseOptions": {
+  "parserOptions": {
     "ecmaVersion": 2022,
     "sourceType": "module"
   },
