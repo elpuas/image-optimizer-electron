@@ -51,16 +51,37 @@ function getScriptPath() {
   return path.join(__dirname, 'scripts', 'optimize.js');
 }
 
+function getNodeModulesPath() {
+  if (app.isPackaged) {
+    // In packaged app, node_modules is in app.asar.unpacked
+    return path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules');
+  }
+  // In development, use relative path from __dirname
+  return path.join(__dirname, 'node_modules');
+}
 
+function getWorkingDirectory() {
+  if (app.isPackaged) {
+    // Set working directory to the app.asar.unpacked directory for proper module resolution
+    return path.join(process.resourcesPath, 'app.asar.unpacked');
+  }
+  // In development, use current directory
+  return __dirname;
+}
 
 ipcMain.handle('optimize-images', (event, inputPath, format) => new Promise((resolve, reject) => {
   // Get the correct script path
   const scriptPath = getScriptPath();
+  const nodeModulesPath = getNodeModulesPath();
+  const workingDir = getWorkingDirectory();
 
   console.log('🧭 App packaged:', app.isPackaged);
   console.log('🧭 Electron executable:', process.execPath);
   console.log('📜 Script path:', scriptPath);
   console.log('📂 Script exists:', fs.existsSync(scriptPath));
+  console.log('📦 Node modules path:', nodeModulesPath);
+  console.log('📦 Node modules exists:', fs.existsSync(nodeModulesPath));
+  console.log('🏠 Working directory:', workingDir);
   console.log('📂 Input folder:', inputPath);
   console.log('🎯 Format:', format);
 
@@ -70,7 +91,12 @@ ipcMain.handle('optimize-images', (event, inputPath, format) => new Promise((res
     ['--input', inputPath, '--format', format],
     {
       silent: true, // Capture stdout/stderr
-      env: { ...process.env, NODE_ENV: 'production' },
+      cwd: workingDir, // Set working directory for proper module resolution
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        NODE_PATH: nodeModulesPath, // Add node_modules to module search path
+      },
     },
   );
 
