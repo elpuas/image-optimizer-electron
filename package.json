@@ -6,10 +6,17 @@
   "scripts": {
     "dev": "electron .",
     "start": "electron .",
+    "dist": "electron-builder",
     "lint": "eslint . --ext .js",
     "lint:fix": "eslint . --ext .js --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
+  },
+  "build": {
+    "appId": "com.elpuas.imageoptimizer",
+      "mac": {
+        "icon": "assets/icon.icns"
+    }
   },
   "keywords": ["electron", "image", "optimizer", "desktop", "sharp"],
   "author": "",
