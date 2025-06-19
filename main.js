@@ -75,16 +75,6 @@ ipcMain.handle('optimize-images', (event, inputPath, format) => new Promise((res
   const nodeModulesPath = getNodeModulesPath();
   const workingDir = getWorkingDirectory();
 
-  console.log('🧭 App packaged:', app.isPackaged);
-  console.log('🧭 Electron executable:', process.execPath);
-  console.log('📜 Script path:', scriptPath);
-  console.log('📂 Script exists:', fs.existsSync(scriptPath));
-  console.log('📦 Node modules path:', nodeModulesPath);
-  console.log('📦 Node modules exists:', fs.existsSync(nodeModulesPath));
-  console.log('🏠 Working directory:', workingDir);
-  console.log('📂 Input folder:', inputPath);
-  console.log('🎯 Format:', format);
-
   // Use fork instead of spawn - this works better for Node.js scripts in Electron
   const child = fork(
     scriptPath,
@@ -100,10 +90,6 @@ ipcMain.handle('optimize-images', (event, inputPath, format) => new Promise((res
     },
   );
 
-  child.on('spawn', () => {
-    console.log('🚀 Forked optimization process');
-  });
-
   let outputBuffer = '';
   let errorBuffer = '';
 
@@ -112,7 +98,6 @@ ipcMain.handle('optimize-images', (event, inputPath, format) => new Promise((res
     child.stdout.on('data', (data) => {
       const text = data.toString();
       outputBuffer += text;
-      console.log('📤 Script stdout:', text.trim());
 
       // Split by lines and emit each complete line
       const lines = text.split('\n');
@@ -130,7 +115,6 @@ ipcMain.handle('optimize-images', (event, inputPath, format) => new Promise((res
     child.stderr.on('data', (data) => {
       const text = data.toString();
       errorBuffer += text;
-      console.log('📤 Script stderr:', text.trim());
 
       // Split by lines and emit each complete line
       const lines = text.split('\n');
@@ -145,8 +129,6 @@ ipcMain.handle('optimize-images', (event, inputPath, format) => new Promise((res
 
   // Handle process completion
   child.on('close', (code, signal) => {
-    console.log(`🏁 Process closed with code ${code}, signal ${signal}`);
-
     // Send final completion status
     event.sender.send('optimize-complete', {
       success: code === 0,
@@ -161,7 +143,6 @@ ipcMain.handle('optimize-images', (event, inputPath, format) => new Promise((res
 
   // Handle process errors
   child.on('error', (error) => {
-    console.log('💥 Fork error:', error);
     const msg = `Failed to start optimization process: ${error.message}`;
     event.sender.send('optimize-log', `ERROR: ${msg}`);
     event.sender.send('optimize-complete', {
