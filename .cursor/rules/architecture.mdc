@@ -1,5 +1,50 @@
 ---
 description:
 globs:
-alwaysApply: false
+alwaysApply: true
 ---
+# Architecture Rules for Image Optimizer Electron
+
+## Core Principles
+
+### 1. Standard Electron Architecture
+- **Main Process**: `main.js` - Window management, app lifecycle, native OS integration
+- **Renderer Process**: `renderer/` - UI logic, user interactions, DOM manipulation
+- **Preload Script**: `preload.js` - Secure bridge between main and renderer processes
+- **Utility Scripts**: `scripts/` - Pure Node.js logic for image processing
+
+### 2. Separation of Concerns
+- **UI Layer**: HTML/CSS/JS in `renderer/` - NO direct Node.js API access
+- **Logic Layer**: Node.js scripts in `scripts/` - NO DOM manipulation
+- **Bridge Layer**: Preload script - ONLY expose necessary APIs via contextBridge
+
+### 3. IPC (Inter-Process Communication)
+- Keep IPC minimal and purpose-driven
+- Use contextBridge for secure API exposure
+- Avoid exposing raw Node.js APIs to renderer
+- Define clear contracts between main and renderer processes
+
+### 4. Image Processing Architecture
+- All image transformations MUST use `sharp` library
+- Image processing logic belongs in `scripts/optimize.js`
+- Renderer requests processing via IPC, receives results
+- No direct file system access from renderer process
+
+## File Structure Guidelines
+
+```
+main.js              # App lifecycle, window management
+preload.js           # Secure API bridge
+renderer/
+  ├── index.html     # UI structure
+  └── app.js         # UI logic only
+scripts/
+  └── optimize.js    # Image processing logic
+```
+
+## Anti-Patterns to Avoid
+- Direct Node.js API usage in renderer
+- Complex state management systems
+- Unnecessary abstractions or frameworks
+- Mixing UI and business logic
+- Exposing entire Node.js APIs via contextBridge

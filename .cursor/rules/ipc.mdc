@@ -1,5 +1,59 @@
 ---
 description:
 globs:
-alwaysApply: false
+alwaysApply: true
 ---
+# IPC Rules for Image Optimizer Electron
+
+## Core IPC Principles
+
+### 1. Minimal and Purpose-Driven
+- Only expose APIs that are absolutely necessary
+- Each IPC method should have a single, clear purpose
+- Avoid creating generic "do anything" IPC channels
+
+### 2. Security First
+- ALWAYS use contextBridge in preload script
+- NEVER expose raw Node.js APIs to renderer
+- Validate all data passed between processes
+- Use structured data contracts
+
+### 3. Clear API Contracts
+- Define explicit input/output types
+- Handle errors gracefully across process boundaries
+- Use consistent naming conventions
+- Document all exposed APIs
+
+## Required IPC APIs for Image Optimizer
+
+### Image Processing APIs
+```javascript
+// In preload.js
+contextBridge.exposeInMainWorld('electronAPI', {
+  // Image optimization
+  optimizeImage: (filePath, options) => ipcRenderer.invoke('optimize-image', filePath, options),
+
+  // File system operations
+  selectImageFile: () => ipcRenderer.invoke('select-image-file'),
+  saveOptimizedImage: (data, savePath) => ipcRenderer.invoke('save-optimized-image', data, savePath),
+
+  // App operations
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+});
+```
+
+### Main Process Handlers
+```javascript
+// In main.js
+ipcMain.handle('optimize-image', async (event, filePath, options) => {
+  // Delegate to scripts/optimize.js
+  return await optimizeImageFile(filePath, options);
+});
+```
+
+## IPC Anti-Patterns
+- Don't expose `require()` or `import()` to renderer
+- Don't pass large binary data through IPC (use file paths instead)
+- Don't create overly generic IPC channels
+- Don't bypass contextBridge security model
+- Don't expose shell execution capabilities

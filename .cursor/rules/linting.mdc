@@ -1,5 +1,62 @@
 ---
 description:
 globs:
-alwaysApply: false
+alwaysApply: true
 ---
+# Linting Rules for Image Optimizer Electron
+
+## Code Quality Standards
+
+### 1. ESLint Configuration
+- Use **Airbnb base** ruleset for consistent code style
+- Enable **ES2022** features for modern JavaScript
+- Different environments for main/renderer processes
+- Strict error handling and variable usage rules
+
+### 2. Prettier Formatting
+- **Single quotes** for strings
+- **Semicolons** required
+- **Trailing commas** for multi-line structures
+- **100 character** line limit
+- **2 spaces** for indentation
+
+### 3. Process-Specific Rules
+
+#### Main Process (`main.js`, `preload.js`, `scripts/`)
+- Node.js environment enabled
+- Browser environment disabled
+- Allow Node.js APIs and modules
+- Strict error handling for async operations
+
+#### Renderer Process (`renderer/`)
+- Browser environment enabled
+- Node.js environment disabled
+- `electronAPI` global allowed via preload
+- No direct Node.js API usage
+
+### 4. Code Quality Requirements
+- **No unused variables** (except prefixed with `_`)
+- **Prefer const** over let/var
+- **Arrow functions** for callbacks
+- **Consistent spacing** and indentation
+- **Proper error handling** for async operations
+
+## Linting Commands
+```bash
+npm run lint        # Check for linting errors
+npm run lint:fix    # Auto-fix linting errors
+npm run format      # Format code with Prettier
+npm run format:check # Check formatting without changes
+```
+
+## Quality Gates
+- All code must pass ESLint with zero errors
+- Warnings are acceptable but should be minimized
+- Code must be formatted with Prettier
+- No console.log in production code (use console.warn for debugging)
+- All async operations must have proper error handling
+
+## File-Specific Exceptions
+- `console.log` allowed in development for debugging
+- `devDependencies` imports allowed in config files
+- `no-unused-vars` relaxed for function parameters prefixed with `_`
