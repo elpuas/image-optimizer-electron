@@ -1,6 +1,9 @@
+#!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
+
+console.log('✅ optimize.js script is running');
 
 function formatBytes(bytes) {
   if (bytes === 0) return '0 Bytes';

@@ -28,13 +28,15 @@
       "node_modules/**/*",
       "package.json"
     ],
+    "asarUnpack": [
+      "node_modules/sharp/**/*",
+      "scripts/**/*"
+    ],
     "extraResources": [
       {
         "from": "scripts",
         "to": "app/scripts",
-        "filter": [
-          "**/*"
-        ]
+        "filter": ["**/*"]
       }
     ],
     "mac": {

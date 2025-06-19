@@ -1,8 +1,9 @@
 const {
   app, BrowserWindow, ipcMain, dialog,
 } = require('electron');
-const { spawn } = require('child_process');
+const { fork } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -30,71 +31,96 @@ ipcMain.handle('select-folder', async () => {
 
 function getScriptPath() {
   if (app.isPackaged) {
-    // In packaged app, scripts are in the resources directory
-    return path.join(process.resourcesPath, 'app', 'scripts', 'optimize.js');
+    // Try multiple possible locations for the script in packaged app
+    const possiblePaths = [
+      path.join(process.resourcesPath, 'app.asar.unpacked', 'scripts', 'optimize.js'),
+      path.join(process.resourcesPath, 'app', 'scripts', 'optimize.js'),
+      path.join(__dirname, '..', 'app.asar.unpacked', 'scripts', 'optimize.js'),
+    ];
+
+    for (const scriptPath of possiblePaths) {
+      if (fs.existsSync(scriptPath)) {
+        return scriptPath;
+      }
+    }
+
+    // Fallback to first path if none exist (will help with debugging)
+    return possiblePaths[0];
   }
   // In development, use relative path from __dirname
   return path.join(__dirname, 'scripts', 'optimize.js');
 }
 
-function getNodeExecutable() {
-  if (app.isPackaged) {
-    // In packaged app, use the embedded Node.js
-    return process.execPath;
-  }
-  // In development, use the current Node.js process
-  return process.execPath;
-}
+
 
 ipcMain.handle('optimize-images', (event, inputPath, format) => new Promise((resolve, reject) => {
-  // Get the correct paths for packaged vs development
+  // Get the correct script path
   const scriptPath = getScriptPath();
-  const nodeExecutable = getNodeExecutable();
 
-  // Spawn the child process
-  const child = spawn(
-    nodeExecutable,
-    [scriptPath, '--input', inputPath, '--format', format],
+  console.log('🧭 App packaged:', app.isPackaged);
+  console.log('🧭 Electron executable:', process.execPath);
+  console.log('📜 Script path:', scriptPath);
+  console.log('📂 Script exists:', fs.existsSync(scriptPath));
+  console.log('📂 Input folder:', inputPath);
+  console.log('🎯 Format:', format);
+
+  // Use fork instead of spawn - this works better for Node.js scripts in Electron
+  const child = fork(
+    scriptPath,
+    ['--input', inputPath, '--format', format],
     {
-      stdio: ['ignore', 'pipe', 'pipe'], // stdin ignored, capture stdout and stderr
+      silent: true, // Capture stdout/stderr
+      env: { ...process.env, NODE_ENV: 'production' },
     },
   );
+
+  child.on('spawn', () => {
+    console.log('🚀 Forked optimization process');
+  });
 
   let outputBuffer = '';
   let errorBuffer = '';
 
   // Handle stdout data - emit real-time updates
-  child.stdout.on('data', (data) => {
-    const text = data.toString();
-    outputBuffer += text;
+  if (child.stdout) {
+    child.stdout.on('data', (data) => {
+      const text = data.toString();
+      outputBuffer += text;
+      console.log('📤 Script stdout:', text.trim());
 
-    // Split by lines and emit each complete line
-    const lines = text.split('\n');
-    lines.forEach((line, index) => {
-      if (line.trim() || index < lines.length - 1) {
-        // Send real-time log update to renderer
-        event.sender.send('optimize-log', line);
-      }
+      // Split by lines and emit each complete line
+      const lines = text.split('\n');
+      lines.forEach((line, index) => {
+        if (line.trim() || index < lines.length - 1) {
+          // Send real-time log update to renderer
+          event.sender.send('optimize-log', line);
+        }
+      });
     });
-  });
+  }
 
   // Handle stderr data - emit real-time error updates
-  child.stderr.on('data', (data) => {
-    const text = data.toString();
-    errorBuffer += text;
+  if (child.stderr) {
+    child.stderr.on('data', (data) => {
+      const text = data.toString();
+      errorBuffer += text;
+      console.log('📤 Script stderr:', text.trim());
 
-    // Split by lines and emit each complete line
-    const lines = text.split('\n');
-    lines.forEach((line, index) => {
-      if (line.trim() || index < lines.length - 1) {
-        // Send real-time log update to renderer
-        event.sender.send('optimize-log', `ERROR: ${line}`);
-      }
+      // Split by lines and emit each complete line
+      const lines = text.split('\n');
+      lines.forEach((line, index) => {
+        if (line.trim() || index < lines.length - 1) {
+          // Send real-time log update to renderer
+          event.sender.send('optimize-log', `ERROR: ${line}`);
+        }
+      });
     });
-  });
+  }
 
   // Handle process completion
-  child.on('close', (code) => {
+  child.on('close', (code, signal) => {
+    console.log(`🏁 Process closed with code ${code}, signal ${signal}`);
+
     // Send final completion status
     event.sender.send('optimize-complete', {
       success: code === 0,
@@ -109,6 +135,7 @@ ipcMain.handle('optimize-images', (event, inputPath, format) => new Promise((res
 
   // Handle process errors
   child.on('error', (error) => {
+    console.log('💥 Fork error:', error);
     const msg = `Failed to start optimization process: ${error.message}`;
     event.sender.send('optimize-log', `ERROR: ${msg}`);
     event.sender.send('optimize-complete', {
