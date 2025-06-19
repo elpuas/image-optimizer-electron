@@ -1,6 +1,54 @@
+#!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
-const sharp = require('sharp');
+
+console.log('✅ optimize.js script is running');
+console.log('🔍 Current working directory:', process.cwd());
+console.log('🔍 Script location:', __filename);
+console.log('🔍 NODE_PATH environment variable:', process.env.NODE_PATH);
+
+// Try to resolve sharp module in different ways for packaged apps
+let sharp;
+try {
+  sharp = require('sharp');
+  console.log('✅ Successfully loaded sharp module via require("sharp")');
+} catch (error) {
+  console.log('❌ Failed to load sharp via require("sharp"):', error.message);
+
+  // Try alternative resolution paths for packaged apps
+  const possibleSharpPaths = [
+    path.join(process.cwd(), 'node_modules', 'sharp'),
+    path.join(__dirname, '..', 'node_modules', 'sharp'),
+    path.join(__dirname, '..', '..', 'node_modules', 'sharp'),
+    path.join(__dirname, '..', '..', 'app.asar.unpacked', 'node_modules', 'sharp'),
+  ];
+
+  if (process.env.NODE_PATH) {
+    possibleSharpPaths.unshift(path.join(process.env.NODE_PATH, 'sharp'));
+  }
+
+  console.log('🔍 Trying alternative sharp module paths:');
+  possibleSharpPaths.forEach(sharpPath => {
+    console.log(`  - ${sharpPath} (exists: ${fs.existsSync(sharpPath)})`);
+  });
+
+  for (const sharpPath of possibleSharpPaths) {
+    if (fs.existsSync(sharpPath)) {
+      try {
+        sharp = require(sharpPath);
+        console.log(`✅ Successfully loaded sharp from: ${sharpPath}`);
+        break;
+      } catch (loadError) {
+        console.log(`❌ Failed to load sharp from ${sharpPath}:`, loadError.message);
+      }
+    }
+  }
+
+  if (!sharp) {
+    console.error('❌ Could not load sharp module from any location');
+    process.exit(1);
+  }
+}
 
 function formatBytes(bytes) {
   if (bytes === 0) return '0 Bytes';

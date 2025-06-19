@@ -16,6 +16,7 @@ A lightweight desktop application built with Electron and Node.js for optimizing
 - **🔒 Secure Architecture**: Uses Electron's contextBridge for secure IPC communication
 - **📊 Detailed Feedback**: Shows file sizes, compression ratios, and processing status
 - **🎨 Clean UI**: Simple, responsive interface with no frameworks - just vanilla JS
+- **📦 Ready for Distribution**: Fully packaged apps for macOS, Windows, and Linux
 
 ## 📋 Supported Image Formats
 
@@ -54,6 +55,40 @@ npm run dev
 npm start
 ```
 
+## 📦 Building & Distribution
+
+### Build Commands
+
+```bash
+# Build for all platforms
+npm run dist
+
+# Build for specific platforms
+npm run dist -- --mac
+npm run dist -- --win  
+npm run dist -- --linux
+
+# Build for specific architecture
+npm run dist -- --mac --arm64
+npm run dist -- --win --x64
+```
+
+### Build Output
+
+After building, you'll find the packaged applications in the `dist/` directory:
+
+- **macOS**: `Image Optimizer-1.0.0-arm64.dmg` and `.app` bundle
+- **Windows**: `Image Optimizer Setup 1.0.0.exe` and portable `.exe`
+- **Linux**: `Image Optimizer-1.0.0.AppImage` and `.deb` package
+
+### Distribution Files
+
+The build process creates several files:
+- `.dmg` / `.exe` / `.AppImage` - Installer packages
+- `.zip` - Portable application archives
+- `.blockmap` - Delta update files
+- `latest-*.yml` - Auto-updater manifests
+
 ## 📁 Project Structure
 
 ```
@@ -66,8 +101,13 @@ image-optimizer-electron/
 ├── renderer/
 │   ├── index.html          # UI structure
 │   └── app.js              # DOM logic & IPC communication
+├── assets/                 # App icons for different platforms
+│   ├── icon.icns          # macOS icon
+│   ├── icon.ico           # Windows icon
+│   └── icon.png           # Linux icon
+├── dist/                  # Build output (generated)
 └── .cursor/
-    └── rules/              # Development rules and architecture guidelines
+    └── rules/             # Development rules and architecture guidelines
 ```
 
 ## ⚙️ How It Works
@@ -103,7 +143,9 @@ renderer → main: 'optimize-images' (start processing)
 
 ```bash
 npm run dev          # Run in development mode
-npm start            # Run in production mode  
+npm start            # Run in production mode
+npm run build        # Build for distribution (all platforms)
+npm run dist         # Build for distribution (all platforms)  
 npm run lint         # Check code quality with ESLint
 npm run lint:fix     # Auto-fix linting issues
 npm run format       # Format code with Prettier
@@ -117,6 +159,7 @@ npm run format:check # Check code formatting
 - **[sharp](https://sharp.pixelplumbing.com/)** - High-performance image processing
 
 ### Development
+- **[electron-builder](https://www.electron.build/)** - Build and packaging tool
 - **[eslint](https://eslint.org/)** - Code linting with Airbnb base config
 - **[prettier](https://prettier.io/)** - Code formatting
 - **[eslint-config-airbnb-base](https://www.npmjs.com/package/eslint-config-airbnb-base)** - Airbnb ESLint rules
@@ -157,14 +200,67 @@ The project follows strict architectural principles:
 
 ## 🐛 Troubleshooting
 
+### Development Issues
+
 **App won't start**: Ensure Node.js 18+ is installed and dependencies are installed with `npm install`
 
 **No images found**: Make sure your folder contains supported image formats (jpg, png, webp, etc.)
 
-**Sharp installation issues**: Sharp may need to rebuild for your platform. Try:
+**Sharp installation issues**: Sharp may need to rebuild for your platform:
 ```bash
 npm rebuild sharp
 ```
+
+### Build Issues
+
+**Build fails on macOS**: Make sure Xcode command line tools are installed:
+```bash
+xcode-select --install
+```
+
+**Windows build fails**: Install Visual Studio Build Tools or Visual Studio Community
+
+**Linux build fails**: Install required build dependencies:
+```bash
+sudo apt-get install build-essential libnss3-dev libatk-bridge2.0-dev
+```
+
+### Packaged App Issues
+
+**"Cannot find module" errors**: This typically happens when native modules aren't properly unpacked. The current configuration unpacks all `node_modules` to resolve this.
+
+**Sharp not working in packaged app**: All Sharp dependencies (including `detect-libc`) are now properly included via the `asarUnpack` configuration.
+
+**Script execution fails**: The app uses `fork()` instead of `spawn()` for better Node.js script execution in packaged environments.
+
+### Performance Tips
+
+**Large image folders**: The app processes images sequentially to avoid memory issues. For very large folders (1000+ images), consider processing in batches.
+
+**Memory usage**: Sharp is memory-efficient, but very large images (>50MB) may require more system RAM.
+
+## 🔧 Advanced Configuration
+
+### Customizing Build Settings
+
+Edit `package.json` build configuration to customize:
+
+```json
+{
+  "build": {
+    "appId": "com.yourcompany.imageoptimizer",
+    "productName": "Your Image Optimizer",
+    "directories": { "output": "dist" },
+    "asarUnpack": ["node_modules/**/*", "scripts/**/*"]
+  }
+}
+```
+
+### Adding Auto-Updates
+
+The build configuration is ready for auto-update integration. Consider using:
+- [electron-updater](https://www.electron.build/auto-update) for desktop updates
+- GitHub Releases or a custom update server
 
 ## 📄 License
 
