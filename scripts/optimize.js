@@ -2,19 +2,11 @@
 const fs = require('fs');
 const path = require('path');
 
-console.log('✅ optimize.js script is running');
-console.log('🔍 Current working directory:', process.cwd());
-console.log('🔍 Script location:', __filename);
-console.log('🔍 NODE_PATH environment variable:', process.env.NODE_PATH);
-
 // Try to resolve sharp module in different ways for packaged apps
 let sharp;
 try {
   sharp = require('sharp');
-  console.log('✅ Successfully loaded sharp module via require("sharp")');
 } catch (error) {
-  console.log('❌ Failed to load sharp via require("sharp"):', error.message);
-
   // Try alternative resolution paths for packaged apps
   const possibleSharpPaths = [
     path.join(process.cwd(), 'node_modules', 'sharp'),
@@ -27,19 +19,13 @@ try {
     possibleSharpPaths.unshift(path.join(process.env.NODE_PATH, 'sharp'));
   }
 
-  console.log('🔍 Trying alternative sharp module paths:');
-  possibleSharpPaths.forEach(sharpPath => {
-    console.log(`  - ${sharpPath} (exists: ${fs.existsSync(sharpPath)})`);
-  });
-
   for (const sharpPath of possibleSharpPaths) {
     if (fs.existsSync(sharpPath)) {
       try {
         sharp = require(sharpPath);
-        console.log(`✅ Successfully loaded sharp from: ${sharpPath}`);
         break;
       } catch (loadError) {
-        console.log(`❌ Failed to load sharp from ${sharpPath}:`, loadError.message);
+        // Continue trying other paths
       }
     }
   }
@@ -97,10 +83,6 @@ if (!stat.isDirectory()) {
   console.error(`❌ Error: Input path "${inputPath}" is not a directory`);
   process.exit(1);
 }
-
-console.log('🚀 Starting image optimization...');
-console.log(`📂 Input folder: ${inputPath}`);
-console.log(`📷 Target format: ${format}`);
 
 async function processImageFile(file, sourceDir, outputDir, targetFormat) {
   const inputFile = path.join(sourceDir, file);
@@ -163,7 +145,6 @@ async function optimizeImages() {
     const outputPath = path.join(inputPath, 'optimized');
     if (!fs.existsSync(outputPath)) {
       fs.mkdirSync(outputPath);
-      console.log(`📁 Created output directory: ${outputPath}`);
     }
 
     // Find all image files
@@ -174,8 +155,6 @@ async function optimizeImages() {
       console.log('⚠️  No image files found in the selected folder');
       return;
     }
-
-    console.log(`📋 Found ${imageFiles.length} image file(s) to process`);
 
     let processed = 0;
     let errors = 0;
@@ -199,14 +178,13 @@ async function optimizeImages() {
       console.log(`❌ Errors: ${errors} files`);
     }
     console.log(`📁 Output folder: ${outputPath}`);
+
+    process.exit(0);
   } catch (error) {
     console.error(`❌ Fatal error: ${error.message}`);
     process.exit(1);
   }
 }
 
-// Run the optimization
-optimizeImages().catch((error) => {
-  console.error(`❌ Unexpected error: ${error.message}`);
-  process.exit(1);
-});
+// Start the optimization process
+optimizeImages();
