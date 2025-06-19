@@ -186,4 +186,7 @@ async function optimizeImages() {
 }
 
 // Start the optimization process
-optimizeImages();
+optimizeImages().catch(err => {
+  console.error(`❌ Unhandled error: ${err.message}`);
+  process.exit(1);
+});
