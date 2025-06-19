@@ -28,13 +28,32 @@ ipcMain.handle('select-folder', async () => {
   return result.canceled ? null : result.filePaths[0];
 });
 
+function getScriptPath() {
+  if (app.isPackaged) {
+    // In packaged app, scripts are in the resources directory
+    return path.join(process.resourcesPath, 'app', 'scripts', 'optimize.js');
+  }
+  // In development, use relative path from __dirname
+  return path.join(__dirname, 'scripts', 'optimize.js');
+}
+
+function getNodeExecutable() {
+  if (app.isPackaged) {
+    // In packaged app, use the embedded Node.js
+    return process.execPath;
+  }
+  // In development, use the current Node.js process
+  return process.execPath;
+}
+
 ipcMain.handle('optimize-images', (event, inputPath, format) => new Promise((resolve, reject) => {
-  // Path to the optimization script
-  const scriptPath = path.join(__dirname, 'scripts', 'optimize.js');
+  // Get the correct paths for packaged vs development
+  const scriptPath = getScriptPath();
+  const nodeExecutable = getNodeExecutable();
 
   // Spawn the child process
   const child = spawn(
-    process.execPath,
+    nodeExecutable,
     [scriptPath, '--input', inputPath, '--format', format],
     {
       stdio: ['ignore', 'pipe', 'pipe'], // stdin ignored, capture stdout and stderr
