@@ -179,10 +179,9 @@ async function optimizeImages() {
     }
     console.log(`📁 Output folder: ${outputPath}`);
 
-    process.exit(0);
+    exitWithMessage(0, '\n🎉 Optimization complete!\n✅ Successfully processed: ' + processed + ' files' + (errors > 0 ? '\n❌ Errors: ' + errors + ' files' : '') + '\n📁 Output folder: ' + outputPath);
   } catch (error) {
-    console.error(`❌ Fatal error: ${error.message}`);
-    process.exit(1);
+    exitWithMessage(1, `❌ Fatal error: ${error.message}`);
   }
 }
 
